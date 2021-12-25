@@ -8,7 +8,7 @@
     <version>2.3.1.RELEASE</version>
     <relativePath></relativePath>
   </parent>
-  <groupId>com.fedex.gccr</groupId>
+  <groupId>com.epo.gccr</groupId>
   <artifactId>McAfee-jdbc-app</artifactId>
   <version>1.0.0</version>
   <name>McAfee-jdbc-app</name>

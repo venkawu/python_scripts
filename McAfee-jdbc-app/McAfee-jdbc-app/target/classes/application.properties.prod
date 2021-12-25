@@ -1,0 +1,97 @@
+spring.application.name=McAfee-jdbc-consumer-source
+spring.profiles.active=dev
+cron.expression =0 /5 * ? * *
+schedule.interval=60000
+
+
+#Spring SQL server configs 
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.initialization-mode=NEVER
+spring.datasource.url=jdbc:sqlserver://epo-list1.corp.ds.fedex.com:1526
+spring.datasource.username=eif-ro-user
+spring.datasource.password=SG5KcW5Ra3VUdzNCbUFSZkZ4e
+
+
+
+#Kafka configs
+spring.cloud.stream.bindings.output.destination=DBConnect_McAfeeEPO
+spring.cloud.stream.kafka.binder.brokers=eif-prod-broker-01.prod.cloud.fedex.com:9092,eif-prod-broker-02.prod.cloud.fedex.com:9092,eif-prod-broker-03.prod.cloud.fedex.com:9092,eif-prod-broker-04.prod.cloud.fedex.com:9092,eif-prod-broker-05.prod.cloud.fedex.com:9092,eif-prod-broker-06.prod.cloud.fedex.com:9092,eif-prod-broker-07.prod.cloud.fedex.com:9092,eif-prod-broker-08.prod.cloud.fedex.com:9092,eif-prod-broker-09.prod.cloud.fedex.com:9092,eif-prod-broker-10.prod.cloud.fedex.com:9092,eif-prod-broker-11.prod.cloud.fedex.com:9092,eif-prod-broker-12.prod.cloud.fedex.com:9092
+spring.cloud.stream.kafka.binder.configuration.security.protocol= SSL
+spring.cloud.stream.kafka.binder.configuration.ssl.keystore.location=/opt/fedex/tip3535268/certs/keystore.jks
+spring.cloud.stream.kafka.binder.configuration.ssl.keystore.password=gccrES19!
+spring.cloud.stream.kafka.binder.configuration.ssl.key.keystore.type=jks
+spring.cloud.stream.kafka.binder.configuration.ssl.truststore.location=/opt/fedex/tip3535268/certs/truststore.jks
+spring.cloud.stream.kafka.binder.configuration.ssl.truststore.password=gccrES19!
+spring.main.web-application-type=NONE
+
+#Mcafee DB Properties
+mcafee.db.autoIDLogFile			=/var/fedex/tip3535268/mcafee/trackAutoID.log
+mcafee.db.delayBetweenRequests	=60000
+mcafee.db.autoID				=1933958083
+mcafee.db.retries				=5
+mcafee.db.server				=epo-list1.corp.ds.fedex.com
+mcafee.db.port					=1526
+mcafee.db.user					=eif-ro-user
+mcafee.db.password				=SG5KcW5Ra3VUdzNCbUFSZkZ4e
+mcafee.db.sqlStatement 			=SELECT\
+    [EPOEvents].[ReceivedUTC] as [timestamp],\
+    [EPOEvents].[AutoID],\
+    [EPOEvents].[ThreatName] as [signature],\
+    [EPOEvents].[ThreatType] as [threat_type],\
+    [EPOEvents].[ThreatEventID] as [signature_id],\
+    [EPOEvents].[ThreatCategory] as [category],\
+    [EPOEvents].[ThreatSeverity] as [severity_id],\
+    [EPOEventFilterDesc].[Name] as [event_description],\
+    [EPOEvents].[DetectedUTC] as [detected_timestamp],\
+    [EPOEvents].[TargetFileName] as [file_name],\
+    [EPOEvents].[AnalyzerDetectionMethod] as [detection_method],\
+    [EPOEvents].[ThreatActionTaken] as [vendor_action],\
+    CAST([EPOEvents].[ThreatHandled] as int) as [threat_handled],\
+    [EPOEvents].[TargetUserName] as [logon_user],\
+    [EPOComputerProperties].[UserName] as [user],\
+    [EPOComputerProperties].[DomainName] as [dest_nt_domain],\
+    [EPOEvents].[TargetHostName] as [dest_dns],\
+    [EPOEvents].[TargetHostName] as [dest_nt_host],\
+    [EPOComputerProperties].[IPHostName] as [fqdn],\
+    [dest_ip] = ( convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOComputerProperties].[IPV4x] + 2147483648))),1,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOComputerProperties].[IPV4x] + 2147483648))),2,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOComputerProperties].[IPV4x] + 2147483648))),3,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOComputerProperties].[IPV4x] + 2147483648))),4,1))) ),\
+    [EPOComputerProperties].[SubnetMask] as [dest_netmask],\
+    [EPOComputerProperties].[NetAddress] as [dest_mac],\
+    [EPOComputerProperties].[OSType] as [os],\
+    [EPOComputerProperties].[OSCsdVersion] as [sp],\
+    [EPOComputerProperties].[OSVersion] as [os_version],\
+    [EPOComputerProperties].[OSBuildNum] as [os_build],\
+    [EPOComputerProperties].[TimeZone] as [timezone],\
+    [EPOEvents].[SourceHostName] as [src_dns],\
+    [src_ip] = ( convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOEvents].[SourceIPV4] + 2147483648))),1,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOEvents].[SourceIPV4] + 2147483648))),2,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOEvents].[SourceIPV4] + 2147483648))),3,1)))+'.'+convert(varchar(3),convert(tinyint,substring(convert(varbinary(4),convert(bigint,([EPOEvents].[SourceIPV4] + 2147483648))),4,1))) ),\
+    [EPOEvents].[SourceMAC] as [src_mac],\
+    [EPOEvents].[SourceProcessName] as [process],\
+    [EPOEvents].[SourceURL] as [url],\
+    [EPOEvents].[SourceUserName] as [source_logon_user],\
+    [EPOComputerProperties].[IsPortable] as [is_laptop],\
+    [EPOEvents].[AnalyzerName] as [product],\
+    [EPOEvents].[AnalyzerVersion] as [product_version],\
+    [EPOEvents].[AnalyzerEngineVersion] as [engine_version],\
+    [EPOEvents].[AnalyzerDATVersion] as [dat_version],\
+    [EPOProdPropsView_VIRUSCAN].[datver] as [vse_dat_version],\
+    [EPOProdPropsView_VIRUSCAN].[enginever64] as [vse_engine64_version],\
+    [EPOProdPropsView_VIRUSCAN].[enginever] as [vse_engine_version],\
+    [EPOProdPropsView_VIRUSCAN].[hotfix] as [vse_hotfix],\
+    [EPOProdPropsView_VIRUSCAN].[productversion] as [vse_product_version],\
+    [EPExtendedEvent].[SourceHash] as [vse_source_file_hash],\
+    [EPExtendedEvent].[SourceParentProcessHash] as [vse_parent_process_hash],\
+    [EPExtendedEvent].[SourceProcessHash] as [vse_source_process_hash],\
+    [EPExtendedEvent].[TargetHash] as [vse_target_file_hash],\
+    [EPExtendedEvent].[SourceFilePath] as [vse_source_file_path],\
+    [EPExtendedEvent].[SourceDescription] as [vse_source_description],\
+    [EPExtendedEvent].[TargetPath] as [vse_target_path],\
+    [EPExtendedEvent].[TargetName] as [vse_target_name],\
+    [EPExtendedEvent].[FirstActionStatus] as [vse_first_action_status],\
+    [EPExtendedEvent].[SecondActionStatus] as [vse_second_action_status],\
+    [EPOProdPropsView_VIRUSCAN].[servicepack] as [vse_sp]\
+FROM "ePO_C0004889_Events"."dbo"."EPOEvents" with (nolock)\
+LEFT JOIN "ePO_C0004889"."dbo"."EPOLeafNode" with (nolock) ON [EPOEvents].[AgentGUID] = [EPOLeafNode].[AgentGUID]\
+LEFT JOIN "ePO_C0004889"."dbo"."EPOProdPropsView_VIRUSCAN" with (nolock) ON [EPOLeafNode].[AutoID] = [EPOProdPropsView_VIRUSCAN].[LeafNodeID]\
+LEFT JOIN "ePO_C0004889"."dbo"."EPOComputerProperties" with (nolock) ON [EPOLeafNode].[AutoID] = [EPOComputerProperties].[ParentID]\
+LEFT JOIN "ePO_C0004889"."dbo"."EPOEventFilterDesc" with (nolock) ON [EPOEvents].[ThreatEventID] = [EPOEventFilterDesc].[EventId] AND ([EPOEventFilterDesc].[Language]='0409')\
+LEFT JOIN "ePO_C0004889"."dbo"."EPExtendedEvent" with (nolock) on [EPOEvents].[AutoID] = [EPExtendedEvent].[EventAutoID]\
+WHERE [EPOEvents].[AutoID] > 

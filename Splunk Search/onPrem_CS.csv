@@ -1,0 +1,375 @@
+title,search
+Endpoint - [PCI] Windows Firewall Modifications - Rule,"((index=myorg_infosec_forwardedevents OR index=myorg_eis_fxi_ad_304547 OR index=winlogevents)(Name=""'Microsoft-Windows-Security-Auditing'"" OR Name= ""'Security'"")(EventCode IN(""4946"",""4948"",""4947"",""851"",""852"",""854"")))"
+Threat - (O365) Activity from Infrequent Country - Rule,"|  datamodel Alerts search  
+| `drop_dm_object_name(""Alerts"")` |  search reason=""Activity from infrequent country"" 
+|  fields reason, body, id, src_user, subject, app, type
+|  rename body AS message, id AS SID
+| eval mitre_id=""T1078"""
+Threat - (O365) Suspicious Inbox Forwarding - Rule,"|  datamodel Alerts search  
+| `drop_dm_object_name(""Alerts"")` |  search reason=""Suspicious inbox forwarding"" 
+|  fields reason, body, id, src_user, subject, app, type
+|  rename body AS message, id AS SID
+| eval mitre_id=""T1020, T1567"""
+Threat - (O365) Unusual Addition of Credentials to an OAuth App - Rule,"|  datamodel Alerts search  
+| `drop_dm_object_name(""Alerts"")` |  search reason=""Unusual addition of credentials to an OAuth app"" 
+|  fields reason, body, id, src_user, subject, app, type
+|  rename body AS message, id AS SID
+| eval mitre_id=""T1078.004"""
+Threat - (O365) User Activity From a Risky IP - Rule,"(`cim_Authentication_indexes`) tag=authentication NOT (action=success user=*$) 
+| search action=success signature_id=9995 ""risky ip address"" 
+| eval mitre_id=""T1078.004"""
+Threat - (O365)Suspicious Inbox Manipulation Rule - Rule,"|  datamodel Alerts search  
+| `drop_dm_object_name(""Alerts"")` |  search reason=""Suspicious inbox manipulation rule"" 
+|  fields reason, body, id, src_user, subject, app, type
+|  rename body AS message, id AS SID  
+| eval mitre_id=""T1020, T1567"""
+Threat - A potentially malicious URL click was detected  - Rule,"index=myorg_infosec_o365_3531575  user=AirInvestigation Severity=Medium OR Severity=High  AlertDisplayName=""A potentially malicious URL click was detected"" 
+| fields - Actions{}, AadTenantId, _raw 
+| sort _time
+| eval InvestigationName = mvindex(InvestigationName, 0), Recipient =  mvindex(Recipient, 0), Sender =  mvindex(Sender, 0), SenderIP =  mvindex(SenderIP, 0),  Url =  mvindex( Url, 0), Verdict =  mvindex(Verdict, 0), Status =  mvindex(Status, 0)
+| dedup ProviderAlertId
+| eval user=Upn
+| eval mitre_id=""T1566, T1204""
+| `get_identity4events(user)`
+| eval user_manager=user_managedBy
+| `get_identity4manager_id(user_manager)`
+| table _time, TimeGenerated, CreationTime, EndTimeUtc, Recipient, user, user_identity, user_priority, user_bunit, user_identity_tag, user_managedBy, user_manager_nick, user_manager_phone, user_manager_email, user_manager_managedBy, user_manager_identity_tag, user_manager_priority, Sender, SenderIP, Url, dhost, Verdict, InvestigationName, Status, mitre_id, Verdict, VendorName, tag"
+Threat - Allowed traffic to sites categorized as malicious - Rule,"index=myorg_app_insc_proxy_345296 OR index=myorg_eis_fxi_mwg_345296 (category=""Malicious Downloads"" OR category=""Malicious Sites"") status=2* NOT dest_ip=""155.161.0.0/16"" NOT dest_host=*.google.com NOT dest_host=secureconv-dl.com
+| search NOT
+[| inputlookup web_url_whitelist_lookup
+| fields web.url as url]
+| search NOT
+[| inputlookup web_rule_whitelist_lookup
+| fields web.rule as rule]"
+Threat - Azure High Severity Alert - Rule,"index=myorg_infosec_azure_security_3531575
+severity=high
+category!=MCAS_ALERT_CABINET_EVENT_MATCH_AUDIT
+category!=Fusion_SharedEntityCrossVMs
+category!=Fusion_KillChainProgress
+category!=UnfamiliarLocation
+category!=Fusion_SimilarPatternCrossVMs
+category!=ThreatManagement
+category!=MCAS_ALERT_MANAGEMENT_GENERIC
+category!=""SQL.DB_PotentialSqlInjection""
+category!=MaliciousIP
+category!=DataGovernance
+| eval mitre_id=""T1036"""
+Threat - Azure Malicious IP - Rule,"index=myorg_infosec_azure_security_3531575 eventtype=GraphSecurityAlert Severity=high ThreatSignature=""MaliciousIP"" src_user_email=*
+| eval src_user_id = mvindex(src_user_identity, 0), manager=src_user_managedBy
+| `get_identity4manager_id(manager)`
+| eval mitre_id=""T1078""
+|  table startTime, created_timestamp, name, ThreatSignature, Message, Severity, CategoryOutcome, devicevendor, DeviceProduct, src_user_ip, src_user_identity, src_user_id, SourceUserName, src_user_nick, src_user_priority, src_user_email, src_user_location, src_user_work_city, src_user_work_country, src_user_work_lat, src_user_work_long, src_user_bunit, src_user_category, src_user_phone, src_user_managedBy, manager_nick, manager_phone,  manager_email, manager_bunit, manager_category, manager_work_city, manager_work_country, manager_managedBy, tag, mitre_id"
+Threat - Azure Unfamiliar Location - Rule,"index=myorg_infosec_azure_security_3531575 eventtype=GraphSecurityAlert Severity=high ThreatSignature=UnfamiliarLocation  
+| lookup purpleUNF.csv src_ip as src_user_ip output src_ip as match  | search NOT match=*   
+| eval src_user_id = mvindex(src_user_identity, 0), manager=src_user_managedBy
+| `get_identity4manager_id(manager)`
+| eval mitre_id=""T1078""
+| table  startTime, Severity, devicevendor, ThreatSignature, CategoryOutcome, subject, Message, user_logon_timestamp, src_user_work_city, src_user_work_country, src_user_location, src_user_work_lat, src_user_work_long, src_username, src_user_identity, src_user_id, src_user_nick, src_user_first, src_user_last, src_user_email, src_user_priority, src_user_phone, src_user_ip, EventId, DeviceProduct, src_user_managedBy,  manager_nick, manager_phone,  manager_email, manager_bunit, manager_category, manager_work_city, manager_work_country, manager_managedBy, src_user_identity_id, src_user_bunit, sourceDnsDomain, src_user_identity_tag, src_user_category, tag, mitre_id"
+Threat - Cobalt Strike *DNS* beacon detection - Rule,"(index=myorg_infosec_dns OR index=myorg_eis_fxi_qip_dns) and (""aaa.stage."" or ""aab.stage."" or ""aac.stage."" or ""post.1"") 
+| eval mitre_id=""T1483, T1008"""
+Threat - Domain Admin Enumeration via net.exe - Rule,"| tstats `security_content_summariesonly` count values(Processes.user) as user values(Processes.parent_process) as parent_process min(_time) as firstTime max(_time) as lastTime from datamodel=Endpoint.Processes where (Processes.process_name=net.exe OR Processes.process_name=net1.exe) AND Processes.process=""*Domain Admin"" by Processes.process Processes.process_name Processes.dest 
+| `drop_dm_object_name(Processes)` 
+| `security_content_ctime(firstTime)` 
+| `security_content_ctime(lastTime)` 
+| `get_asset(dest)` 
+| eval mitre_id=""T1087"""
+Threat - Domain Generation Algorithms (DNS) - Rule,"| tstats `summariesonly` allow_old_summaries=true count from datamodel=Network_Resolution where nodename=DNS ""DNS.query""=""*.*"" NOT DNS.query IN (""*.online-metrix.net"", ""*.myorg.com"", ""*.kinkos.com"", ""*.riverbed.com"", ""*.jpg"", ""*.png"", ""*.jpeg"", ""*.arpa"", ""*.sophosxl.net"" ,""*.internal"", ""_kerberos*"", ""_sip._*"", “*.onmicrosoft.com”) by ""DNS.src"",""DNS.query"" 
+| `drop_dm_object_name(""DNS"")` 
+| rename query as domain 
+| where len(domain)>35 
+| search NOT 
+    [| inputlookup majestic_million_top_10k.csv 
+    | strcat ""*."" Domain domain 
+    | fields + domain] 
+| `ut_shannon(domain)` 
+| where ut_shannon > 5.0 
+| stats count values(ut_shannon) as ut_shannon by src domain 
+| `get_asset(src)` 
+| eval mitre_id=""T1204, T1568"""
+Threat - Doubly Encoded PowerShell Commands - Rule,"(index=myorg_infosec_forwardedevents OR index=wineventlog OR index = myorg_infosec_fxisr_ad OR myorg_eis_fxi_ad_304547 ) sourcetype=wineventlog:security 
+    EventCode=4688
+    New_Process_Name=""*powershell.exe""
+    Process_Command_Line IN (""*-encodedcommand*"",""*-encode*"",""*-enc*"",""*-en*"") 
+| rex field=Process_Command_Line ""-((?i)enc|encodedcommand|encode|en)\s+\'?(?<encoded_blob>[A-Za-z0-9\+\/]{20,10000}\=?\=?)'?"" 
+| stats count by EventCode host user Creator_Process_Name New_Process_Name encoded_blob 
+| localop 
+| decrypt field=encoded_blob atob hex emit('decoded_blob') 
+| eval decoded_blob=mvjoin(split(decoded_blob, ""00""), """") 
+| decrypt field=decoded_blob unhex emit('decoded_blob') 
+| eval is_url=if(match(decoded_blob,""((?:[A-Za-z0-9\+\-\.]+:\/\/)[\w.]+(?:\.[\w\.-]+)+(?:[\w\-\._~:\/?#\[\]@!\$&\'\(\)\*\+,;=]+))""), ""true"", ""false"") 
+| search decoded_blob IN (""*downloadstring*"",""*downloadfile*"",""*invoke-webrequest*"",""*iex*"",""*compression*"",""*decompress*"",""*bitstransfer*"") OR is_url=true 
+| search NOT 
+    [| inputlookup encoded_command_filter.csv 
+    | fields process 
+    | rename process as process_name] 
+| search NOT 
+    [| inputlookup encoded_command_filter.csv 
+    | fields process] 
+| search NOT parent_process=""*mcafee*"" NOT parent_process=""*cyberark*"" 
+| eval mitre_id=""T1059, T1132"" 
+| table count EventCode host user Creator_Process_Name New_Process_Name decoded_blob mitre_id"
+Threat - Emotet Indicators - Rule,"| tstats count FROM datamodel=Threat_Intelligence by Threat_Activity.src, Threat_Activity.src_category, Threat_Activity.src_priority, Threat_Activity.dest, Threat_Activity.dest_category, Threat_Activity.threat_collection, Threat_Activity.threat_collection_key, Threat_Activity.threat_key, Threat_Activity.threat_match_field, Threat_Activity.threat_match_value 
+| `drop_dm_object_name(Threat_Activity)` 
+| eval indicator=coalesce(src,dest) 
+| join type=outer indicator 
+    [ search index=""tc_event_data"" 
+    | stats count by indicator, indicatorId, indicatorAssociations{}.id, indicatorAssociations{}.name, indicatorAssociations{}.type, indicatorAssociations{}.weblink, indicatorConfidence, indicatorDateAdded, indicatorLastModified, indicatorOwnerName, indicatorRating, indicatorTags{}, indicatorType, indicatorWebLink]
+| search indicatorTags{}=emotet
+| eval mitre_id=""T1219, T1102"""
+Threat - Endpoint Uncleaned Malware Detection - Rule,"(index=myorg_mcafee_epo_dlp OR index=myorg_eis_fxi_epo_345803 OR index=myorg_infosec_mcafee_endpoint_345803 OR index=myorg_infosec_fxisr_epo) tag=malware tag=attack 
+| search action!=blocked 
+    `vse_exclusions` 
+| eval mitre_id=""T1203, T1204"" 
+| `get_asset(dest)` 
+| `get_asset(src)` 
+| `get_identity4events(user)` 
+| eval user_manager=user_managedBy 
+| `get_identity4manager_id(user_manager)` 
+| table _time, process_hash, file_name, file_path, dest, signature, action, detected_timestamp, mitre_id, file_hash, category, src, src_bunit, src_category, src_priority, dest_bunit, dest_category, dest_nt_domain, dest_priority, user, user_bunit, user_category, user_phone, user_email, user_priority, user_identity_tag, user_managedBy, user_manager_nick, user_manager_phone, user_manager_email, user_manager_managedBy, user_manager_identity_tag, user_manager_priority
+| sort dest"
+Threat - GCP  IAM Anomalous Grant - Rule,"index=myorg_infosec_gcp_threat_5120 finding.category=""Persistence: IAM Anomalous Grant"" 
+| foreach finding.securityMarks.marks* 
+    [ eval tmpField='<<FIELD>>'] 
+| where NOT like(tmpField, ""%"") 
+| rex field=grant_members "".+\:(?<grant_member>.+)$"" 
+| eval mitre_id=""T1078, T1548"" 
+| table grant_member, create_time, rule_name, benign, grant_action, security_mark_status, grant_principal_email, grant_role, indicator, projectID, sub_rule_name, technique, mitre_id"
+Threat - Large Web Upload (> .5GB) - Rule,"| tstats `summariesonly` count FROM datamodel=Web WHERE Web.bytes_out>536870912 Web.user!=unknown by Web.bytes_out, Web.url, Web.user, Web.src, Web.action 
+| search NOT 
+    [| inputlookup large_web_upload_url_lookup 
+    | fields Web.url] 
+| search NOT 
+    [| inputlookup web_activity_user_whitelist_lookup 
+    | fields Web.user] 
+| search NOT 
+    [| inputlookup web_activity_src_whitelist_lookup
+    | fields Web.src]
+| `drop_dm_object_name(Web)` 
+| rename src as src_ip 
+| fields action, src_ip, url, user, bytes_out 
+| eval mitre_id=""T1041, T1048"""
+Threat - Malware Report - Rule,"| tstats `summariesonly` count, dc(Malware_Attacks.dest) as dest_count, values(Malware_Attacks.dest) as dest, dc(Malware_Attacks.file_hash) as file_hashes, values(Malware_Attacks.file_hash) as file_hash, dc(Malware_Attacks.file_path) as file_paths, values(Malware_Attacks.file_path) as file_path, dc(Malware_Attacks.file_name) as file_names, values(Malware_Attacks.file_name) as file_name from datamodel=Malware.Malware_Attacks by Malware_Attacks.signature Malware_Attacks.action 
+| `drop_dm_object_name(""Malware_Attacks"")` 
+| where (action=""blocked"" AND count>4) OR action!=""blocked"" AND (file_name!=""tuglot_checkout.exe"" AND file_path!=""C:\ProgramData\Tuglot"" AND file_hash!=""CB6077E72B018E952FAAAC2D6757F821"") 
+| eval file_hash=if(file_hashes>25, mvappend(mvindex(file_hash, 0, 25), ""...Truncated""), file_hash) 
+| eval dest=if(dest_count>25, mvappend(mvindex(dest, 0, 25), ""...Truncated""), dest) 
+| eval file_path=if(file_paths>25, mvappend(mvindex(file_path, 0, 25), ""...Truncated""), file_path) 
+| eval file_name=if(file_names>25, mvappend(mvindex(file_name, 0, 25), ""...Truncated""), file_name)"
+Threat - Metasploit Indicators - Rule,"((index=myorg_infosec_forwardedevents OR index=wineventlog OR myorg_eis_fxi_ad_304547 OR index = myorg_infosec_fxisr_ad) sourcetype=xmlwineventlog) OR (index=myorg_infosec_rsa_netwitness_endpoint_3530840 (sourcetype=myorg:infosec:netwitness_endpoint OR sourcetype=myorg:rsa:netwitness OR sourcetype=myorg:rsa:netwitness:tracking)) OR ((index=myorg_mcafee_epo_dlp OR index=myorg_eis_fxi_epo_345803 OR index=myorg_infosec_mcafee_endpoint_345803 OR index=myorg_infosec_fxisr_epo) sourcetype=mcafee:epo) TERM(""Msfconsole"") OR TERM(""msfd"") OR TERM(""msfdb"") OR TERM(""msfrpc"") OR TERM(""msfrpcd"") OR TERM(""msfupdate"") OR TERM(""msfvenom"") NOT EventCode=8200 
+| eval mitre_id=""T1543, T1068, T1055"""
+Threat - Missing SourceType(s) - Rule,"| tstats latest(_time) as Latest where 
+    [| inputlookup security_indexes.csv 
+    | format ] by sourcetype index 
+| eval current=now() 
+| eval Minimum_Age=round(((current-Latest)/60)/60,2) 
+| where Minimum_Age>4 
+| convert ctime(Latest), ctime(current)"
+Threat - PSExec/PSExesvc Usage - Rule,"(index=myorg_infosec_forwardedevents OR index=myorg_eis_fxi_ad_304547 OR index=wineventlog OR index= myorg_infosec_fxisr_ad NOT EventCode=3) OR 
+    (index=myorg_infosec_mcafee_endpoint_345803 OR index=myorg_mcafee_epo_dlp OR index=myorg_eis_fxi_epo_345803 OR index= myorg_infosec_fxisr_epo)
+    ""psexec.exe"" OR ""psexesvc.exe""
+    NOT action=blocked NOT ProcessName=""*ccmexec.exe"" NOT parent_process=""*cyberark*"" NOT parent_process=""*mcafee*"" 
+| search NOT 
+    [| inputlookup myorg_psexec_process_lookup
+    | fields process] 
+| eval mitre_id=""T1570, T1021, T1569"""
+Threat - Password Spraying - Rule,"| tstats count FROM datamodel=Authentication where Authentication.action=failure AND Authentication.src_user!=""*$"" AND Authentication.src_user!=""unknown"" by Authentication.src, Authentication.src_user 
+| `drop_dm_object_name(Authentication)` 
+| where Authentication.src!=""10.0.0.0/8"" AND
+ Authentication.src!=""172.16.0.0/12"" AND
+ Authentication.src!=""192.189.187.0/24"" AND
+ Authentication.src!=""199.81.0.0/16"" AND
+ Authentication.src!=""199.82.0.0/16"" AND
+ Authentication.src!=""204.135.0.0/16"" AND
+ Authentication.src!=""46.248.2.0/23"" AND
+ Authentication.src!=""125.252.102.15/32"" AND
+ Authentication.src!=""125.252.102.16/28"" AND
+ Authentication.src!=""125.252.102.32/27"" AND
+ Authentication.src!=""125.252.102.64/26"" AND
+ Authentication.src!=""125.252.102.128/27"" AND
+ Authentication.src!=""170.170.0.0/16"" AND
+ Authentication.src!=""155.161.0.0/16"" AND
+ Authentication.src!=""12.0.0.0/8"" AND
+ Authentication.src!=""213.86.65.128/27""
+| stats values(src_user) AS users, dc(src_user) AS dc_users, dc(src) AS dc_src by src 
+| where dc_users > 2 AND dc_src=1 
+| eval mitre_id=""T1110.003"" 
+| `get_asset(src)`"
+Threat - Potential Drive-by Download from Threat IP - Rule,"index=myorg_infosec_rsa_netwitness_packets_3531616 ""Malware Dropper"" 
+| join dst 
+    [ search index=""tc_event_data"" 
+    | where indicatorConfidence>=70 
+    | rename indicator as dst]
+| eval mitre_id=""T1189"""
+Threat - Proofpoint Click Permitted - Rule,"index=myorg_app_avas_proofpoint_tap_345215 eventType=clicksPermitted classification!=spam | eval campaignId=if(campaignId=="""", ""none"", campaignId) 
+| table eventTime, eventType, recipient, clickTime, clickIP, messageID, sender, senderIP, threatTime, threatStatus, threatURL, threatID, url, userAgent, GUID, campaignId, classification
+| eval mitre_id=""T1598"""
+Threat - Proofpoint Malicious Attachment - Rule,"index=myorg_app_avas_proofpoint_tap_345215 eventType=messagesDelivered ""threatsInfoMap{}.threatType""=attachment ""threatsInfoMap{}.classification""=malware 
+| eval address_from='fromAddress{}',mudules_run='modulesRun{}', policy_routes='policyRoutes{}', recipient='recipient{}', address_to='toAddresses{}', message_sender='sender', src_ip='senderIP', message_subject='subject', threats_campaginID='threatsInfoMap{}.campaignID', threats_classification='threatsInfoMap{}.classification', threats_threat='threatsInfoMap{}.threat', threats_threatID='threatsInfoMap{}.threatID', threats_threat_status='threatsInfoMap{}.threatStatus', threats_threat_time='threatsInfoMap{}.threatTime', threats_threat_type='threatsInfoMap{}.threatType', threats_threat_url='threatsInfoMap{}.threatUrl' 
+| rex field=_raw ""\""messageParts\""\:\s\[(?<messageParts>[^\]]+)\]"" 
+| rex field=messageParts max_match=10 ""(?<messageSubParts>\{[^}]+\})"" 
+| rex field=_raw ""usa(?<centerno>\d+)@myorg\.com"" 
+| eval centerno = ltrim(centerno ,""0"") 
+| lookup local=true myorg_office_store_info.csv centerno OUTPUT centerno, center_name, center_contact_name, center_contact_job_code_desc, center_phone_no 
+| mvexpand messageSubParts 
+| spath input=messageSubParts 
+| search disposition=""attached"" 
+| eval user=recipient 
+| `get_identity4events(user)` 
+| eval mitre_id=""T1204"" 
+| stats values(messageTime) as messageTime, values(eventTime) as eventTime, values(date_zone) as date_zone, values(eventType) as eventType, values(impostorScore) as impostorScore, values(mitre_tactic) as mitre_tactic,values(mitre_technique) as mitre_technique,values(mitre_id) as mitre_id, values(malwareScore) as malwareScore, values(phishScore) as phishScore, values(spamScore) as spamScore, values(completelyRewritten) as completelyRewritten, values(src_ip) as src_ip, values(message_sender) as message_sender, values(address_from) as address_from, values(headerFrom) as headerFrom, values(headerReplyTo) as headerReplyTo, values(address_to) as address_to, values(recipient) as recipient, values(centerno) as centerno, values(center_name) as center_name, values(center_contact_name) as center_contact_name, values(center_contact_job_code_desc) as center_contact_job_code_desc, values(center_phone_no) as center_phone_no, values(user_identity) as user_identity, values(user_nick) as user_nick, values(user_email) as user_email, values(user_phone) as user_phone, values(user_work_city) as user_work_city, values(user_work_country) as user_work_country, values(user_category) as user_category, values(user_bunit) as user_bunit, values(user_managedBy) as user_managedBy, values(message_subject) as message_subject, values(policy_routes) as policy_routes, values(quarantineFolder) as quarantineFolder, values(quarantineRule) as quarantineRule, values(mudules_run) as mudules_run, values(sandboxStatus) as sandboxStatus, values(filename) as filename, values(oContentType) as oContentType, values(disposition) as disposition, values(md5) as md5, values(sha256) as sha256, values(threats_campaginID) as threats_campaginID, values(threats_classification) as threats_classification, values(threats_threat) as threats_threat, values(threats_threatID) as threats_threatID, values(threats_threat_status) as threats_threat_status, values(threats_threat_time) as threats_threat_time, values(threats_threat_type) as threats_threat_type, values(threats_threat_url) as threats_threat_url, values(xmailer) as xmailer, values(messageSize) as messageSize, values(messageID) as messageID, values(GUID) as GUID by QID"
+Threat - Risky Users Anomalies - APT - Rule,"index=myorg_infosec_sbd_anomalies_5120 sourcetype=user_rule_anomaly OR sourcetype=user_algorithm_anomaly 
+| eval modelApplyTime = if(sourcetype=""user_rule_anomaly"",ruleApplyTime,algApplyTime) 
+| eval anomalyType=if(sourcetype=""user_rule_anomaly"",""rule"",""algorithm"") 
+| eval anomalyId=if(sourcetype=""user_rule_anomaly"",ruleId,algId) 
+| eval anomalyDesc=if(sourcetype=""user_rule_anomaly"",ruleDesc,algDesc) 
+| rename eventTime AS beginTime aggLevel AS interval 
+| table user, beginTime, interval, anomalyType, anomalyId, anomalyDesc, modelApplyTime, dataSrc,top5Srcs,top5Dests 
+| join user 
+    [ search index=""myorg_infosec_sbd_anomalies_5120"" sourcetype=""risky_user"" category=""APT""
+    | table user, category, ensembleCoverageBeginTime, ensembleCoverageEndTime,ensembleTime,numOfAlgAnomalies,numOfRuleAnomalies,
+        probabilisticSum,timeSeqVarScore,weightedCount,location] 
+| where (beginTime>=ensembleCoverageBeginTime AND beginTime<=ensembleCoverageEndTime) 
+| sort - weightedCount 
+| dedup user 
+| head 10 
+| table user,location,beginTime,interval,anomalyType,anomalyId,anomalyDesc,modelApplyTime,dataSrc,top5Srcs,top5Dests,weightedCount"
+Threat - Risky Users Anomalies - All - Rule,"index=myorg_infosec_sbd_anomalies_5120 sourcetype=user_rule_anomaly OR sourcetype=user_algorithm_anomaly 
+| eval modelApplyTime = if(sourcetype=""user_rule_anomaly"",ruleApplyTime,algApplyTime) 
+| eval anomalyType=if(sourcetype=""user_rule_anomaly"",""rule"",""algorithm"") 
+| eval anomalyId=if(sourcetype=""user_rule_anomaly"",ruleId,algId) 
+| eval anomalyDesc=if(sourcetype=""user_rule_anomaly"",ruleDesc,algDesc) 
+| rename eventTime AS beginTime aggLevel AS interval 
+| table user, beginTime, interval, anomalyType, anomalyId, anomalyDesc, modelApplyTime, dataSrc,top5Srcs,top5Dests 
+| join user 
+    [ search index=""myorg_infosec_sbd_anomalies_5120"" sourcetype=""risky_user"" category=""ALL""
+    | table user, category, ensembleCoverageBeginTime, ensembleCoverageEndTime,ensembleTime,numOfAlgAnomalies,numOfRuleAnomalies,
+        probabilisticSum,timeSeqVarScore,weightedCount,location] 
+| where (beginTime>=ensembleCoverageBeginTime AND beginTime<=ensembleCoverageEndTime) 
+| sort - weightedCount 
+| dedup user 
+| head 10 
+| table user,location,beginTime,interval,anomalyType,anomalyId,anomalyDesc,modelApplyTime,dataSrc,top5Srcs,top5Dests,weightedCount"
+Threat - Risky Users Anomalies - InsiderThreats - Rule,"index=myorg_infosec_sbd_anomalies_5120 sourcetype=user_rule_anomaly OR sourcetype=user_algorithm_anomaly 
+| eval modelApplyTime = if(sourcetype=""user_rule_anomaly"",ruleApplyTime,algApplyTime) 
+| eval anomalyType=if(sourcetype=""user_rule_anomaly"",""rule"",""algorithm"") 
+| eval anomalyId=if(sourcetype=""user_rule_anomaly"",ruleId,algId) 
+| eval anomalyDesc=if(sourcetype=""user_rule_anomaly"",ruleDesc,algDesc) 
+| rename eventTime AS beginTime aggLevel AS interval 
+| table user, beginTime, interval, anomalyType, anomalyId, anomalyDesc, modelApplyTime, dataSrc,top5Srcs,top5Dests 
+| join user 
+    [ search index=""myorg_infosec_sbd_anomalies_5120"" sourcetype=""risky_user"" category=""InsiderThreats""
+    | table user, category, ensembleCoverageBeginTime, ensembleCoverageEndTime,ensembleTime,numOfAlgAnomalies,numOfRuleAnomalies,
+        probabilisticSum,timeSeqVarScore,weightedCount,location] 
+| where (beginTime>=ensembleCoverageBeginTime AND beginTime<=ensembleCoverageEndTime) 
+| sort - weightedCount 
+| dedup user 
+| head 10 
+| table user,location,beginTime,interval,anomalyType,anomalyId,anomalyDesc,modelApplyTime,dataSrc,top5Srcs,top5Dests,weightedCount"
+Threat - Risky Users Anomalies - PrivilegedUsers - Rule,"index=myorg_infosec_sbd_anomalies_5120 sourcetype=user_rule_anomaly OR sourcetype=user_algorithm_anomaly 
+| eval modelApplyTime = if(sourcetype=""user_rule_anomaly"",ruleApplyTime,algApplyTime) 
+| eval anomalyType=if(sourcetype=""user_rule_anomaly"",""rule"",""algorithm"") 
+| eval anomalyId=if(sourcetype=""user_rule_anomaly"",ruleId,algId) 
+| eval anomalyDesc=if(sourcetype=""user_rule_anomaly"",ruleDesc,algDesc) 
+| rename eventTime AS beginTime aggLevel AS interval 
+| table user, beginTime, interval, anomalyType, anomalyId, anomalyDesc, modelApplyTime, dataSrc,top5Srcs,top5Dests 
+| join user 
+    [ search index=""myorg_infosec_sbd_anomalies_5120"" sourcetype=""risky_user"" category=""PrivilegedUsers""
+    | table user, category, ensembleCoverageBeginTime, ensembleCoverageEndTime,ensembleTime,numOfAlgAnomalies,numOfRuleAnomalies,
+        probabilisticSum,timeSeqVarScore,weightedCount,location] 
+| where (beginTime>=ensembleCoverageBeginTime AND beginTime<=ensembleCoverageEndTime) 
+| sort - weightedCount 
+| dedup user 
+| head 10 
+| table user,location,beginTime,interval,anomalyType,anomalyId,anomalyDesc,modelApplyTime,dataSrc,top5Srcs,top5Dests,weightedCount"
+Threat - Rogue AP Detected - Non-FXG - Rule,"index=myorg_infosec_airdefense_345861 airdefense_server_ip!=10.75.116.7 airdefense_server_ip!=10.75.116.10 dvc_mfg!=ExtremeNetworks dvc_mfg!=ZebraTechnologies  
+| eval mitre_id=""T1200""
+| table  _time,Desc,airdefense_server_ip,dvc_mac,dvc_mfg,sensor_mac,SensorName,SensorIP,sensor_tech,mitre_id"
+Threat - Rogue AP Detected – FXG  - Rule,"index=myorg_infosec_airdefense_345861  (airdefense_server_ip=10.75.116.7 OR airdefense_server_ip=10.75.116.10) dvc_mfg!=ExtremeNetworks  dvc_mfg!=ZebraTechnologies 
+| eval mitre_id=""T1200""
+| table  _time,Desc,airdefense_server_ip,dvc_mac,dvc_mfg,sensor_mac,SensorName,SensorIP,sensor_tech,mitre_id"
+Threat - SQL injection detection Tool Detected - Rule,"index=myorg_app_www* status=200 (uri_path=*absinthe* OR uri_path=*bsqlbf* OR uri_path=*mysqloit* OR uri_path=*sqlmap* OR uri_path=*sqlninja* OR uri_path=*uil2pn*) NOT _abck 
+| search NOT
+    [| inputlookup uri_path_whitelist_lookup
+    | fields uri_path]
+| fields status uri_path src dest xcip 
+| eval mitre_id=""attack.initial_access, attack.t1190, attack.credential_access"""
+Threat - ShadowCopy Deletion - Rule,"(index=wineventlog OR index=myorg_infosec_forwardedevents OR index=myorg_infosec_fxisr_ad OR index=myorg_eis_fxi_ad_304547)  
+(""vssadmin"" AND ""delete"") OR  
+(""wmic shadowcopy"" AND ""delete"") OR  
+(""Get-WmiObject"" AND ""Win32_ShadowCopy"" AND ""*delete*"") OR  
+(""Get-CimInstance"" AND ""Win32_ShadowCopy"" AND ""*remove*"")
+NOT (src_nt_domain=TU271 AND process=""vssadmin delete shadows /all"")
+NOT (src_nt_domain=TNTMS AND process=""vssadmin delete shadows /all"")"
+Threat - Shell Clear Command History High Value Assets - Rule,"index=""os"" source=""/var/log/secure"" ""COMMAND=/usr/bin/rm"" 
+'rm *bash_history'
+'echo """" > *bash_history'
+'cat /dev/null > *bash_history'
+'ln -sf /dev/null *bash_history'
+'truncate -s0 *bash_history'
+'export HISTFILESIZE=0'
+'history -c'
+'history -w'
+'shred *bash_history'
+'empty_bash_history'
+| eval mitre_id=""T1070.003"""
+"Threat - Suspicious Events Reported for ""MFA Enroll Notification"" - Rule","index=myorg_infosec_purpleid_3535358 sourcetype=""oktaim2:log"" eventType=""user.account.report_suspicious_activity_by_enduser"" debugContext.debugData.suspiciousActivityEventType=""system.email.mfa_enroll_notification.sent_message"" | eval mitre_id=""T1078, T1098"""
+"Threat - Suspicious Events Reported for ""MFA Reset Notification"" - Rule","index=myorg_infosec_purpleid_3535358 sourcetype=""oktaim2:log"" eventType=""user.account.report_suspicious_activity_by_enduser"" debugContext.debugData.suspiciousActivityEventType=""system.email.mfa_reset_notification.sent_message"" | eval mitre_id=""T1078, T1098"""
+Threat - Suspicious Powershell Download - Rule,"(index=myorg_infosec_forwardedevents OR index=wineventlog OR index=myorg_infosec_rsa_netwitness_endpoint_3530840 OR index=myorg_mcafee_epo_dlp OR index=myorg_infosec_mcafee_endpoint_345803 OR index =myorg_infosec_fxisr_ad OR index=myorg_eis_fxi_ad_304547) (TLA=""powershell.exe*"" AND (TLA=""*-NoP -NonI -W Hidden -Enc -s -NoLogo -NoProfile*"" OR TLA=""*IO.compression.gzipstream*"" OR TLA=""*SySTeM.NET.WebCliENt*"") AND TLA=""*downloadstring*"" AND TLA!=""*chocolatey.org*"")
+| eval mitre_id=""T1564, T1132, T1102"""
+Threat - Suspicious RDP Connections - Rule,"(index=myorg_infosec_forwardedevents OR index=wineventlog OR myorg_eis_fxi_ad_304547) LogonType=10 EventID=4624 (src_ip!=172.16.0.0/16 AND src_ip!=172.17.0.0/16 AND src_ip!=172.18.0.0/16 AND src_ip!=172.19.0.0/16 AND src_ip!=172.20.0.0/16 AND src_ip!=172.21.0.0/16 AND src_ip!=172.22.0.0/16 AND src_ip!=172.23.0.0/16 AND src_ip!=172.24.0.0/16 AND src_ip!=172.25.0.0/16 AND src_ip!=172.26.0.0/16 AND src_ip!=172.27.0.0/16 AND src_ip!=172.28.0.0/16 AND src_ip!=172.29.0.0/16 AND src_ip!=172.30.0.0/16 AND src_ip!=172.31.0.0/16 AND src_ip!=10.0.0.0/8 AND 192.168.0.0/16) 
+|  eval mitre_id=""T1021, T1563"""
+Threat - Suspicious SMB Traffic Detected (Ransomware/Wannacry Detected) - Rule,"| tstats `summariesonly` values(All_Traffic.dest) as dest, values(All_Traffic.action) as action, values(All_Traffic.dest_port) as dest_port, values(All_Traffic.src_zone) as src_zone, count as seconds_count from datamodel=Network_Traffic where (All_Traffic.dest_port=139 OR All_Traffic.dest_port=445 OR All_Traffic.app=smb) AND NOT All_Traffic.src_zone IN (external, outside) AND NOT All_Traffic.src_category=known_scanner  AND NOT
+ [| inputlookup suspicious_smb_traffic_detected_fp_ip_address.csv
+| rename * as All_Traffic.*
+| format] by _time, All_Traffic.src span=1s
+| `drop_dm_object_name(All_Traffic)`
+| streamstats time_window=2s dc(dest) as distinct_destinations, sum(seconds_count) as two_second_count by src
+| eval event_threshold=500, distinct_host_threshold=1
+| where distinct_destinations>distinct_host_threshold AND two_second_count>event_threshold
+| fields - seconds_count
+| `get_asset(src)`
+| eval mitre_id=""T1077"""
+Threat - Suspicious SolarWinds Child Process - Rule,"((index=wineventlog OR index=myorg_infosec_fxisr_ad OR index=myorg_eis_fxi_ad_304547) sourcetype=xmlwineventlog source=xmlwineventlog:security EventCode=4688) OR (index=myorg_infosec_rsa_netwitness_endpoint_3530840 sourcetype=myorg:rsa:netwitness:tracking Action=""CreateProcess"") (parent_process=""*\\solarwinds.businesslayerhost.exe"" OR parent_process_name=""solarwinds.businesslayerhost.exe"") 
+    NOT process IN (""*\\SolarWinds\\Orion\\APM\\APMServiceControl.exe"", ""*\\SolarWinds\\Orion\\ExportToPDFCmd.Exe"", ""*\\SolarWinds.Credentials\\SolarWinds.Credentials.Orion.WebApi.exe"", ""*\\SolarWinds\\Orion\\Topology\\SolarWinds.Orion.Topology.Calculator.exe"", ""*\\SolarWinds\\Orion\\Database-Maint.exe"", ""*\\SolarWinds.Orion.ApiPoller.Service\\SolarWinds.Orion.ApiPoller.Service.exe"", ""*\\Windows\\SysWOW64\\WerFault.exe"") 
+| eval mitre_id=""T1195"""
+Threat - Suspicious SolarWinds File Creation - Rule,"index=myorg_infosec_rsa_netwitness_endpoint_3530840 sourcetype=myorg:rsa:netwitness:tracking Action IN (Edit, WriteExecutable, RenameExecutable, ReadDocument) parent_process IN (""*\\solarwinds.businesslayerhost.exe"", ""*\\SolarWindws.BusinessLayerHostx64.exe"") OR process IN (""*\solarwinds.businesslayerhost.exe"", ""*\\SolarWindws.BusinessLayerHostx64.exe"")
+| eval mitre_id=""T1195"""
+Threat - Suspicious email sending patterns detected - Rule,"index=myorg_infosec_o365_3531575  user=AirInvestigation Severity=Medium OR Severity=High  AlertDisplayName=""Suspicious email sending patterns detected""  
+| fields - Actions{}, AadTenantId, _raw 
+| sort _time
+| eval InvestigationName = mvindex(InvestigationName, 0), Recipient =  mvindex(Recipient, 0),  SenderIP =  mvindex(SenderIP, 0),  Url =  mvindex( Url, 0), Verdict =  mvindex(Verdict, 0), Status =  mvindex(Status, 0)
+| dedup ProviderAlertId
+| eval user=Upn, file_name=Name, sha256=Value
+| `get_identity4events(user)`
+| eval user_manager=user_managedBy
+| `get_identity4manager_id(user_manager)`
+| `get_asset_by(str, MachineName)`
+| eval mitre_id=""T1114, T1078""
+| table _time, TimeGenerated, CreationTime, EndTimeUtc, AlertDisplayName, Description, AntispamDirection, Sender, MailboxPrimaryAddress, user, user_identity, user_priority, user_bunit, user_identity_tag, user_managedBy, user_manager_nick, user_manager_phone, user_manager_email, user_manager_managedBy, user_manager_identity_tag, user_manager_priority, Sender, SenderIP, MachineName, file_name, sha256, Url, DeliveryAction, Verdict, ConfidenceScore, ConfidenceLevel, InvestigationName, Status, Verdict, DeepLinkUrl, VendorName, tag. mitre_id"
+Threat - UEBA to Siemplify TEST - Rule,"index=ueba uba_event_type=Threat signature=""Suspicious Behavior""
+| fillnull | mvexpand user | mvexpand dvc_dns | mvexpand dvc_ip | mvexpand dvc_nt_host | mvexpand dvc | mvexpand url
+| eval user=if(NOT user=0,user,null())
+| eval dvc=if(NOT dvc=0,dvc,null())
+| eval url=if(NOT url=0,url,null())
+| eval dvc_dns=if(NOT dvc_dns=0,dvc_dns,null()) 
+| eval dvc_ip=if(NOT dvc_ip=0,dvc_ip,null())
+| eval dvc_nt_host=if(NOT dvc_nt_host=0,dvc_nt_host,null())
+| rename dvc as src, dvc_ip as src_ip, dvc_nt_host as src_host, dvc_dns as src_hostname
+| fields _time, signature, src, src_hostname, src_ip, src_host, severity, user, severity_id, url, uba_link"
+Threat - User restricted from sending email - Rule,"index=myorg_infosec_o365_3531575 Severity=Medium OR Severity=High user=AirInvestigation  AlertDisplayName=""User restricted from sending email"" 
+| rename Name as FileName
+ | spath input=Data path=""Entities{}.Files{}"" output=FilesJSON  | mvexpand FilesJSON | spath input=FilesJSON | rename ""$id"" as FilesID, Name as FilesName, FileHashes{}.Algorithm as FileHashAlogrithm, FileHashes{}.Value as FileHashValue
+ | search FilesName!=""*.png"" AND FilesName!=""*.jpg"" AND FilesName!=""*.gif""
+| fields - Actions{}, AadTenantId, _raw 
+| sort _time
+| eval InvestigationName = mvindex(InvestigationName, 0), Recipient =  mvindex(Recipient, 0), Sender =  mvindex(Sender, 0), MachineName = mvindex(MachineName, 0), SenderIP =  mvindex(SenderIP, 0),  Url =  mvindex( Url, 0), Verdict =  mvindex(Verdict, 0), Status =  mvindex(Status, 0)
+| eval user=Upn, file_name=FilesName, sha256= FileHashValue
+| search (file_name!=""*.jpg"" AND file_name=*) OR NOT file_name=*
+| eval mitre_id=""T1114, T1078""
+| `get_identity4events(user)`
+| eval user_manager=user_managedBy
+| `get_identity4manager_id(user_manager)`
+| `get_asset_by(str, MachineName)`
+| table _time, TimeGenerated, CreationTime, EndTimeUtc, AlertDisplayName, Description, AntispamDirection, Sender, MailboxPrimaryAddress, user, user_identity, user_priority, user_bunit, user_identity_tag, user_managedBy, user_manager_nick, user_manager_phone, user_manager_email, user_manager_managedBy, user_manager_identity_tag, user_manager_priority, Sender, SenderIP, MachineName, file_name, sha256, Url, DeliveryAction, Verdict, ConfidenceScore, ConfidenceLevel, InvestigationName, Status, Verdict, DeepLinkUrl, VendorName, mitre_id"
+Threat - WMIC Remote Stylesheet Execution - Rule,"(index=myorg_infosec_forwardedevents OR index=wineventlog OR myorg_eis_fxi_ad_304547 OR index=myorg_infosec_rsa_netwitness_endpoint_3530840 OR index=myorg_eis_fxi_ad_304547) process_name=""wmic.exe"" AND process=""*format:*"" NOT process=""*format:list"" NOT process=""*format:csv"" NOT process=""*format:table"" NOT process=""*format:value"" NOT process=""*format:rawxml"" NOT process=""*format:texttable"" NOT parent_process=""*mcafee*"" NOT parent_process=""*cyberark*"" NOT parent_process=""*cisco\\proximity*"" 
+| eval mitre_id=""T1047"""
